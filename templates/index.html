@@ -67,20 +67,43 @@
       function pageLoadFn() {
         console.log('Page Loading...')
 
+        //Function to get current time to set calendar
+        Date.prototype.toDateInputValue = (function() {
+            var local = new Date(this);
+            local.setMinutes(this.getMinutes() - this.getTimezoneOffset());
+            return local.toJSON().slice(0,10);
+        });
+
+        //Set calendar date
+        $('#todayDate').val(new Date().toDateInputValue());
+
+        //Get current calendar date
+        var currentDate = $('#todayDate').val()
+        console.log( currentDate )
+
         $.ajax({
                 method: "POST",
+                data: {'currentDate': currentDate},
                 url: "{{ url_for('checkDateForData') }}",
-                dataType: "json"
               })
          .done( function(result) {
-           //$("#div1").html(result);
-           console.log("Success")
-           console.log(result)
-         });
+           //No data for current date found
+           if(result['data'] == false){
+             console.log('No data')
 
+             //Show Modal
+             $("#staticBackdrop").modal("show");
+          //Error
+           } else if (result['error'] == 'Multiple Records found'){
+             console.log('Multiple Records found')
+          //Data already added
+           } else if (result['data'] == true) {
+             console.log(result)
 
-        //Show Modal
-        $("#staticBackdrop").modal("show");
+             //Show Modal
+             $("#staticBackdrop").modal("hide");
+           }
+         }); //End ajax call
 
       }
     </script>

@@ -14,29 +14,34 @@ class cycleInputForm(FlaskForm):
     todayDate = DateField('DatePicker', format='%Y-%m-%d')
 
     monitor = SelectField('Monitor',
-              choices=[('L','L'), ('M','M'), ('H','H')])
+              choices=[('LH','LJ'), ('ES','ES')])
 
     sexyTime = BooleanField('Sexy Time')
 
+    newCycle = BooleanField('New Cycle')
+
     submit = SubmitField('Enter Data')
 
-#This will be called by a button. It will not follow the
-# FlaskForm class as it will probably be done by hijacking
-# the form date field and some ajax call.
+
 @app.route('/checkDateForData', methods=['POST'])
 def checkDateForData():
-    result = db.checkForDataForDate('2022-08-30')
+    print('checkDateForData')
+    currentDate = None
+    if request.method == 'POST':
+        currentDate = request.form['currentDate']
 
-    if result == None:
-        return None
-    elif len(result) > 1:
-        return {'error': 'Multiple Records found'}
-    else:
-        return dbToJson(result[0]) #Only pass the single record
+        result = db.checkForDataForDate(str(currentDate))
+
+        if len(result) == 0:
+            return {'data': False}
+        elif len(result) > 1:
+            return {'error': 'Multiple Records found'}
+        else:
+            return dbToJson(result[0]) #Only pass the single record
 
 #This is the main and only page. This will load a modal to
 # get user input. Modal should be disabled when page is
-#loaded and data is present for the day. Use route above.
+# loaded and data is present for the day. Use route above.
 @app.route('/', methods=['GET', 'POST'])
 @app.route('/index', methods=['GET', 'POST'])
 def home():
@@ -52,7 +57,8 @@ def dbToJson(obj):
     toReturn = {'date': obj[0],
                 'monitor': obj[1],
                 'sexyTime': obj[2],
-                'rOrG': obj[3]
+                'rOrG': obj[3],
+                'data': True
                 }
     return toReturn
 

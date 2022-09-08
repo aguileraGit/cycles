@@ -33,11 +33,18 @@ class cycleDBClass():
         """
         self.openConnection()
         self.createCursor()
-        sql = '''CREATE TABLE readings
-              ("date" DATE,
-              "monitor" TEXT,
-              "sexyTime" INTEGER,
-              "rORg" INTEGER)'''
+
+        sql = '''CREATE TABLE readings(
+                 "id" INTEGER PRIMARY KEY,
+                 "date" DATE,
+                 "active" INTEGER,
+                 "timestamp" DATE,
+                 "monitor" TEXT,
+                 "sexyTime" INTEGER,
+                 "rORg" INTEGER,
+                 "cycleCount" INTEGER
+                 )'''
+
         try:
             self.cur.execute(sql)
             self.conn.commit()
@@ -47,13 +54,13 @@ class cycleDBClass():
         self.closeConnection()
 
 
-    def addRecord(self, _dt, _monitor, _sexyTime, _rOrG):
+    def addRecord(self, _date, _active, _ts, _monitor, _st, _rOrG, _cc):
         self.openConnection()
         self.createCursor()
-        sql = '''INSERT INTO readings VALUES(?, ?, ?, ?)'''
+        sql = '''INSERT INTO readings VALUES(NULL, ?, ?, ?, ?, ?, ?, ?)'''
 
         try:
-            self.cur.execute(sql, (_dt, _monitor, _sexyTime, _rOrG) )
+            self.cur.execute(sql, (_date, _active, _ts, _monitor, _st, _rOrG, _cc) )
             self.conn.commit()
         except Error as e:
             print(e)
@@ -92,10 +99,10 @@ class cycleDBClass():
 if __name__ == '__main__':
     db = cycleDBClass()
 
-    #db.createTable()
+    db.createTable()
 
-    #db.addRecord('2022-08-30', 'x', 0, 1)
+    db.addRecord('2022-09-07', 1, str(datetime.datetime.now()), 'LH', 0, 'G', 12)
 
-    #db.getAllRecords()
+    db.getAllRecords()
 
-    db.checkForDataForDate('2022-08-30')
+    #print(db.checkForDataForDate('2022-09-07'))
