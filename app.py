@@ -14,11 +14,13 @@ class cycleInputForm(FlaskForm):
     todayDate = DateField('DatePicker', format='%Y-%m-%d')
 
     monitor = SelectField('Monitor',
-              choices=[('LH','LJ'), ('ES','ES')])
+              choices=[('LH','LH'), ('ES','ES')])
 
     sexyTime = BooleanField('Sexy Time')
 
     newCycle = BooleanField('New Cycle')
+
+    replaceData = BooleanField('Replace Existing Data')
 
     submit = SubmitField('Enter Data')
 
@@ -30,7 +32,7 @@ def checkDateForData():
     if request.method == 'POST':
         currentDate = request.form['currentDate']
 
-        result = db.checkForDataForDate(str(currentDate))
+        result = db.checkForDataForDate(str(todayDate))
 
         if len(result) == 0:
             return {'data': False}
@@ -48,8 +50,45 @@ def home():
     form = cycleInputForm()
 
     if form.validate_on_submit():
+        formDate = str(form.todayDate.value)
+        error = False
+
+        #Check to see if data exists for the day
+        dataForDayExists = False
+        if db.checkForDataForDate(formDate) == 0:
+            dataForDayExists = True
+
+        #Attempt to replace data to DB
+        if form.replaceData.value == True:
+            try:
+                #Deactive old data
+                result = deactivateDate(form)
+                #Add new record
+                result = addNewRecord(form)
+            except Error as e:
+                error = e
+
+        #Attempt to add new data to DB
+        elif form.replaceData.value != True:
+            #Need to check for data on this day
+            try:
+                result = addNewRecord(form)
+            except Error as e:
+                error = e
+        else:
+            error = 'Replace Data Boolean in unknown state'
+
+        #Need to pass errors below - Look at blocks setup
         return render_template('index.html', form=form)
     return render_template('index.html', form=form)
+
+def addNewRecord(_form):
+    #db.addRecord('2022-09-07', 1, str(datetime.datetime.now()), 'LH', 0, 'G', 12)
+    pass
+
+def deactivateDate(_form):
+    db.deactivateRecordsForDate(formDate)
+
 
 
 def dbToJson(obj):

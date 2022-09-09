@@ -35,6 +35,8 @@
                 {{ form.todayDate(class='datepicker') }}
                 {{ form.monitor }}
                 {{ form.sexyTime }}
+                {{ newCycle }}
+                {{ replaceData }}
 
                 {{ form.submit }}
               </form>
@@ -93,15 +95,22 @@
 
              //Show Modal
              $("#staticBackdrop").modal("show");
+
+             //Disable replaceData Boolean
+
           //Error
            } else if (result['error'] == 'Multiple Records found'){
              console.log('Multiple Records found')
+
           //Data already added
            } else if (result['data'] == true) {
              console.log(result)
 
              //Show Modal
              $("#staticBackdrop").modal("hide");
+
+             //Enable replaceData Boolean
+
            }
          }); //End ajax call
 

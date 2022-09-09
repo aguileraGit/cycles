@@ -68,6 +68,34 @@ class cycleDBClass():
         self.closeConnection()
 
 
+    def deactivateRecordForID(self, _id):
+        self.openConnection()
+        self.createCursor()
+        sql = '''UPDATE readings SET active = 0 WHERE id = ?'''
+
+        try:
+            self.cur.execute(sql, (str(_id))  )
+            self.conn.commit()
+        except Error as e:
+            print(e)
+
+        self.closeConnection()
+
+
+    def deactivateRecordsForDate(self, _date):
+        self.openConnection()
+        self.createCursor()
+        sql = '''UPDATE readings SET active = 0 WHERE date = ?'''
+
+        try:
+            self.cur.execute(sql, (str(_date),) )
+            self.conn.commit()
+        except Error as e:
+            print(e)
+
+        self.closeConnection()
+
+
     def getAllRecords(self):
         self.openConnection()
         self.createCursor()
@@ -87,7 +115,7 @@ class cycleDBClass():
         """
         self.openConnection()
         self.createCursor()
-        sql = '''SELECT * FROM readings WHERE date = ? '''
+        sql = '''SELECT * FROM readings WHERE date = ?'''
         try:
             result = self.cur.execute(sql, (_date,) ).fetchall()
             return result
@@ -101,7 +129,11 @@ if __name__ == '__main__':
 
     db.createTable()
 
-    db.addRecord('2022-09-07', 1, str(datetime.datetime.now()), 'LH', 0, 'G', 12)
+    #db.addRecord('2022-09-07', 1, str(datetime.datetime.now()), 'LH', 0, 'G', 12)
+
+    db.getAllRecords()
+
+    db.deactivateRecordsForDate('2022-09-07')
 
     db.getAllRecords()
 
