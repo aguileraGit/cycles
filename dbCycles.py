@@ -29,7 +29,7 @@ class cycleDBClass():
 
     def createTable(self):
         """
-        Fields: Datetime, monitor, sexyTime, red or green day
+        Fields: Datetime, monitor, sexyTime, red(0) or green(1) day
         """
         self.openConnection()
         self.createCursor()
@@ -42,7 +42,7 @@ class cycleDBClass():
                  "monitor" TEXT,
                  "sexyTime" INTEGER,
                  "rORg" INTEGER,
-                 "cycleCount" INTEGER
+                 "newCycle" INTEGER
                  )'''
 
         try:
@@ -125,15 +125,16 @@ class cycleDBClass():
 
 
 if __name__ == '__main__':
+    print('dbCycles.py')
     db = cycleDBClass()
 
     db.createTable()
 
     #db.addRecord('2022-09-07', 1, str(datetime.datetime.now()), 'LH', 0, 'G', 12)
 
-    db.getAllRecords()
+    #db.getAllRecords()
 
-    db.deactivateRecordsForDate('2022-09-07')
+    #db.deactivateRecordsForDate('2022-09-07')
 
     db.getAllRecords()
 

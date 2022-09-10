@@ -14,7 +14,16 @@
 
   <body onload="pageLoadFn()">
     <div>
+      Need to think about webpage will look like.<br>
+      I envision either a table with historical data or <br>
+      a way to select a day to view data.<p>
+      Maybe an analytics tab later on for cycle duration <br>
+      and maybe even predictions. This could be a seperate <br>
+      function that runs daily and generates HTML that is <br>
+      loaded via djanjo.
+    </div>
 
+    <div>
       <!-- Button trigger modal -->
       <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#staticBackdrop">
         Launch static backdrop modal
@@ -32,11 +41,24 @@
 
               <form method="POST" action="/">
                 {{ form.csrf_token }}
-                {{ form.todayDate(class='datepicker') }}
-                {{ form.monitor }}
-                {{ form.sexyTime }}
-                {{ newCycle }}
-                {{ replaceData }}
+
+                {{ form.todayDate.label }}<br>
+                {{ form.todayDate(class='datepicker') }}<p>
+
+                {{ form.monitor.label }}<br>
+                {{ form.monitor }}<p>
+
+                {{ form.sexyTime.label }}<br>
+                {{ form.sexyTime }}<p>
+
+                {{ form.newCycle.label }}<br>
+                {{ form.newCycle }}<p>
+
+                {{ form.rORg.label }}<br>
+                {{ form.rORg }}<p>
+
+                {{ form.replaceData.label }}<br>
+                {{ form.replaceData }}<p>
 
                 {{ form.submit }}
               </form>

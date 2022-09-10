@@ -3,6 +3,10 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, validators, SubmitField, IntegerField, SelectField, BooleanField
 from wtforms.validators import DataRequired, InputRequired
 from wtforms.fields import DateField
+
+from sqlite3 import Error
+import datetime
+
 import dbCycles
 
 app = Flask(__name__)
@@ -20,6 +24,8 @@ class cycleInputForm(FlaskForm):
 
     newCycle = BooleanField('New Cycle')
 
+    rORg = BooleanField('Red or Green Day')
+
     replaceData = BooleanField('Replace Existing Data')
 
     submit = SubmitField('Enter Data')
@@ -32,7 +38,7 @@ def checkDateForData():
     if request.method == 'POST':
         currentDate = request.form['currentDate']
 
-        result = db.checkForDataForDate(str(todayDate))
+        result = db.checkForDataForDate(str(currentDate))
 
         if len(result) == 0:
             return {'data': False}
@@ -50,7 +56,8 @@ def home():
     form = cycleInputForm()
 
     if form.validate_on_submit():
-        formDate = str(form.todayDate.value)
+        print('Form Validated')
+        formDate = str(form.todayDate.data)
         error = False
 
         #Check to see if data exists for the day
@@ -59,7 +66,8 @@ def home():
             dataForDayExists = True
 
         #Attempt to replace data to DB
-        if form.replaceData.value == True:
+        if form.replaceData.data == True:
+            print('Replace Data')
             try:
                 #Deactive old data
                 result = deactivateDate(form)
@@ -69,7 +77,8 @@ def home():
                 error = e
 
         #Attempt to add new data to DB
-        elif form.replaceData.value != True:
+        elif form.replaceData.data != True:
+            print('New Data')
             #Need to check for data on this day
             try:
                 result = addNewRecord(form)
@@ -82,17 +91,22 @@ def home():
         return render_template('index.html', form=form)
     return render_template('index.html', form=form)
 
+
 def addNewRecord(_form):
-    #db.addRecord('2022-09-07', 1, str(datetime.datetime.now()), 'LH', 0, 'G', 12)
-    pass
+    db.addRecord( str(_form.todayDate.data),
+                  int(1),
+                  str(datetime.datetime.now()),
+                  str(_form.monitor.data),
+                  int(_form.sexyTime.data),
+                  int(_form.rORg.data),
+                  int(_form.newCycle.data))
+
 
 def deactivateDate(_form):
-    db.deactivateRecordsForDate(formDate)
-
+    db.deactivateRecordsForDate(str(_form.todayDate.data))
 
 
 def dbToJson(obj):
-    print(obj)
     toReturn = {'date': obj[0],
                 'monitor': obj[1],
                 'sexyTime': obj[2],
