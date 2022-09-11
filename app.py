@@ -24,11 +24,12 @@ class cycleInputForm(FlaskForm):
 
     newCycle = BooleanField('New Cycle')
 
-    rORg = BooleanField('Red or Green Day')
+    rORg = BooleanField('Green Day')
 
     replaceData = BooleanField('Replace Existing Data')
 
-    submit = SubmitField('Enter Data')
+    submit = SubmitField('Enter Data',
+                         render_kw={'class': 'btn btn-primary'})
 
 
 @app.route('/checkDateForData', methods=['POST'])
@@ -54,15 +55,18 @@ def checkDateForData():
 @app.route('/index', methods=['GET', 'POST'])
 def home():
     form = cycleInputForm()
+    errors = []
+    msg = []
+    historicData = getHistoricData() #Assume today's date on Server
 
     if form.validate_on_submit():
         print('Form Validated')
         formDate = str(form.todayDate.data)
-        error = False
 
         #Check to see if data exists for the day
         dataForDayExists = False
-        if db.checkForDataForDate(formDate) == 0:
+        if len(db.checkForDataForDate(formDate)) >= 1:
+            print('Data Exists for Day')
             dataForDayExists = True
 
         #Attempt to replace data to DB
@@ -73,6 +77,7 @@ def home():
                 result = deactivateDate(form)
                 #Add new record
                 result = addNewRecord(form)
+                msg.append( 'Data replaced for %s' % (formDate) )
             except Error as e:
                 error = e
 
@@ -80,16 +85,21 @@ def home():
         elif form.replaceData.data != True:
             print('New Data')
             #Need to check for data on this day
-            try:
-                result = addNewRecord(form)
-            except Error as e:
-                error = e
+            if dataForDayExists:
+                print('Error - Data exists')
+                errors.append('Data exists for this day - Select Replace Existing Data to overwrite.')
+            else:
+                try:
+                    result = addNewRecord(form)
+                    msg.append( 'Data added for %s' % (formDate) )
+                except Error as e:
+                    error = e
         else:
             error = 'Replace Data Boolean in unknown state'
 
-        #Need to pass errors below - Look at blocks setup
-        return render_template('index.html', form=form)
-    return render_template('index.html', form=form)
+        return render_template('index.html', form=form, errors=errors, msg=msg)
+
+    return render_template('index.html', form=form, errors=errors, msg=msg)
 
 
 def addNewRecord(_form):
@@ -104,6 +114,13 @@ def addNewRecord(_form):
 
 def deactivateDate(_form):
     db.deactivateRecordsForDate(str(_form.todayDate.data))
+
+def getHistoricData():
+    historyList = db.getActiveRecordsForDateRange('2022-09-11', '2022-09-09')
+    title = ('ID', 'Record Date', 'Active', 'TimeStamp', 'Monitor', 'SexyTime',
+             'Red Or Green', 'New Cycle')
+    historyList.insert(0, title)
+    print(historyList)
 
 
 def dbToJson(obj):

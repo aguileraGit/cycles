@@ -124,6 +124,19 @@ class cycleDBClass():
         self.closeConnection()
 
 
+    def getActiveRecordsForDateRange(self, _dateNewest, _dateOldest):
+        self.openConnection()
+        self.createCursor()
+        sql = '''SELECT * FROM readings WHERE active = 1 AND date BETWEEN ? AND ?'''
+        try:
+            result = self.cur.execute(sql, (_dateOldest, _dateNewest,) ).fetchall()
+            return result
+        except Error as e:
+            print(e)
+        self.closeConnection()
+
+
+
 if __name__ == '__main__':
     print('dbCycles.py')
     db = cycleDBClass()
@@ -136,6 +149,8 @@ if __name__ == '__main__':
 
     #db.deactivateRecordsForDate('2022-09-07')
 
-    db.getAllRecords()
+    #db.getAllRecords()
+    #print("\n")
+    print(db.getActiveRecordsForDateRange('2022-09-11', '2022-09-09'))
 
     #print(db.checkForDataForDate('2022-09-07'))
