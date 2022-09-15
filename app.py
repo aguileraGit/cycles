@@ -28,6 +28,8 @@ class cycleInputForm(FlaskForm):
 
     replaceData = BooleanField('Replace Existing Data')
 
+    #Need delete option
+
     submit = SubmitField('Enter Data',
                          render_kw={'class': 'btn btn-primary'})
 
@@ -77,6 +79,8 @@ def home():
                 result = deactivateDate(form)
                 #Add new record
                 result = addNewRecord(form)
+                #Reload table
+                historicData = getHistoricData() #Need date
                 msg.append( 'Data replaced for %s' % (formDate) )
             except Error as e:
                 error = e
@@ -91,15 +95,23 @@ def home():
             else:
                 try:
                     result = addNewRecord(form)
+                    #Reload table
+                    historicData = getHistoricData() #Need date
                     msg.append( 'Data added for %s' % (formDate) )
                 except Error as e:
                     error = e
         else:
             error = 'Replace Data Boolean in unknown state'
 
-        return render_template('index.html', form=form, errors=errors, msg=msg)
+        return render_template('index.html', form=form,
+                                             errors=errors,
+                                             msg=msg,
+                                             historicData=historicData)
 
-    return render_template('index.html', form=form, errors=errors, msg=msg)
+    return render_template('index.html', form=form,
+                                         errors=errors,
+                                         msg=msg,
+                                         historicData=historicData)
 
 
 def addNewRecord(_form):
@@ -115,12 +127,15 @@ def addNewRecord(_form):
 def deactivateDate(_form):
     db.deactivateRecordsForDate(str(_form.todayDate.data))
 
+
 def getHistoricData():
-    historyList = db.getActiveRecordsForDateRange('2022-09-11', '2022-09-09')
+    historyList = db.getActiveRecordsForDateRange('2022-09-14', '2022-09-09')
     title = ('ID', 'Record Date', 'Active', 'TimeStamp', 'Monitor', 'SexyTime',
              'Red Or Green', 'New Cycle')
     historyList.insert(0, title)
     print(historyList)
+
+    return historyList
 
 
 def dbToJson(obj):

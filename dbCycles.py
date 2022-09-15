@@ -115,7 +115,7 @@ class cycleDBClass():
         """
         self.openConnection()
         self.createCursor()
-        sql = '''SELECT * FROM readings WHERE date = ?'''
+        sql = '''SELECT * FROM readings WHERE date = ? AND active = 1'''
         try:
             result = self.cur.execute(sql, (_date,) ).fetchall()
             return result
@@ -147,10 +147,10 @@ if __name__ == '__main__':
 
     #db.getAllRecords()
 
-    #db.deactivateRecordsForDate('2022-09-07')
+    db.deactivateRecordsForDate('2022-09-14')
 
     #db.getAllRecords()
     #print("\n")
-    print(db.getActiveRecordsForDateRange('2022-09-11', '2022-09-09'))
+    #print(db.getActiveRecordsForDateRange('2022-09-11', '2022-09-09'))
 
     #print(db.checkForDataForDate('2022-09-07'))
