@@ -8,6 +8,7 @@ from sqlite3 import Error
 import datetime
 
 import pandas as pd
+import numpy as np
 
 import dbCycles
 
@@ -138,11 +139,14 @@ def getHistoricData():
     historyList = db.getActiveRecordsForDateRange('2022-09-18', '2022-09-09')
     title = ['ID', 'Record Date', 'Active', 'TimeStamp', 'Monitor', 'SexyTime',
              'Red Or Green', 'New Cycle']
-    #historyList.insert(0, title)
 
     df = pd.DataFrame(historyList)
-
     df.columns = title
+
+    df["SexyTime"] = np.where(df["SexyTime"] == 1, 'Yes', 'No')
+    df["Red Or Green"] = np.where(df["Red Or Green"] == 1, 'Green', 'Red')
+    df["New Cycle"] = np.where(df["New Cycle"] == 1, 'Yes', 'No')
+
     html = df.to_html(justify='left',
                       classes='table table-striped table-bordered table-hover table-sm',
                       columns=['Record Date', 'Monitor', 'SexyTime',
