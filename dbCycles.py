@@ -147,7 +147,8 @@ if __name__ == '__main__':
 
     #db.getAllRecords()
 
-    db.deactivateRecordsForDate('2022-09-14')
+    date = '2022-09-17'
+    db.deactivateRecordsForDate(date)
 
     #db.getAllRecords()
     #print("\n")

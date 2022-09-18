@@ -7,6 +7,8 @@ from wtforms.fields import DateField
 from sqlite3 import Error
 import datetime
 
+import pandas as pd
+
 import dbCycles
 
 app = Flask(__name__)
@@ -28,7 +30,7 @@ class cycleInputForm(FlaskForm):
 
     replaceData = BooleanField('Replace Existing Data')
 
-    #Need delete option
+    active = BooleanField('Delete Data')
 
     submit = SubmitField('Enter Data',
                          render_kw={'class': 'btn btn-primary'})
@@ -48,6 +50,7 @@ def checkDateForData():
         elif len(result) > 1:
             return {'error': 'Multiple Records found'}
         else:
+            #print(result[0])
             return dbToJson(result[0]) #Only pass the single record
 
 #This is the main and only page. This will load a modal to
@@ -62,7 +65,6 @@ def home():
     historicData = getHistoricData() #Assume today's date on Server
 
     if form.validate_on_submit():
-        print('Form Validated')
         formDate = str(form.todayDate.data)
 
         #Check to see if data exists for the day
@@ -76,9 +78,9 @@ def home():
             print('Replace Data')
             try:
                 #Deactive old data
-                result = deactivateDate(form)
+                deactivateDate(form)
                 #Add new record
-                result = addNewRecord(form)
+                addNewRecord(form)
                 #Reload table
                 historicData = getHistoricData() #Need date
                 msg.append( 'Data replaced for %s' % (formDate) )
@@ -115,34 +117,49 @@ def home():
 
 
 def addNewRecord(_form):
-    db.addRecord( str(_form.todayDate.data),
-                  int(1),
-                  str(datetime.datetime.now()),
-                  str(_form.monitor.data),
+    db.addRecord( str(_form.todayDate.data), #Date
+                  int(1), #Active
+                  str(datetime.datetime.now()), #TimeStamp
+                  str(_form.monitor.data), #Monitor
                   int(_form.sexyTime.data),
                   int(_form.rORg.data),
                   int(_form.newCycle.data))
 
 
 def deactivateDate(_form):
-    db.deactivateRecordsForDate(str(_form.todayDate.data))
+    print('Deactive')
+    dateToDeactivate = str(_form.todayDate.data)
+    print(dateToDeactivate)
+    print(type(dateToDeactivate))
+    db.deactivateRecordsForDate(dateToDeactivate) #Not working!
 
 
 def getHistoricData():
-    historyList = db.getActiveRecordsForDateRange('2022-09-14', '2022-09-09')
-    title = ('ID', 'Record Date', 'Active', 'TimeStamp', 'Monitor', 'SexyTime',
-             'Red Or Green', 'New Cycle')
-    historyList.insert(0, title)
-    print(historyList)
+    historyList = db.getActiveRecordsForDateRange('2022-09-18', '2022-09-09')
+    title = ['ID', 'Record Date', 'Active', 'TimeStamp', 'Monitor', 'SexyTime',
+             'Red Or Green', 'New Cycle']
+    #historyList.insert(0, title)
 
-    return historyList
+    df = pd.DataFrame(historyList)
+
+    df.columns = title
+    html = df.to_html(justify='left',
+                      classes='table table-striped table-bordered table-hover table-sm',
+                      columns=['Record Date', 'Monitor', 'SexyTime',
+                               'Red Or Green', 'New Cycle'])
+
+    return html
 
 
 def dbToJson(obj):
-    toReturn = {'date': obj[0],
-                'monitor': obj[1],
-                'sexyTime': obj[2],
-                'rOrG': obj[3],
+    toReturn = {'id': obj[0],
+                'date': obj[1],
+                'active': obj[2],
+                'timestamp': obj[3],
+                'monitor': obj[4],
+                'sexyTime': obj[5],
+                'rORg': obj[6],
+                'newCycle': obj[7],
                 'data': True
                 }
     return toReturn

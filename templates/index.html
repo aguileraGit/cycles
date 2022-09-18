@@ -60,29 +60,10 @@
 
     <!-- Historic Table Div -->
     <div class="container">
-      <table class="table table-striped">
-        {% for row in historicData %}
-          {% if row.counter == 0 %}
-            <thead>
-              <tr>
-                {% for col in row %}
-                  <th>{{ col }}</th>
-                {% endfor %}
-              </tr>
-            </thead>
 
-          {% else %}
+        {{ historicData|safe }}
 
-            <tbody>
-              <tr>
-                {% for col in row %}
-                  <td  scope="col">{{ col }}</td>
-                {% endfor %}
-              </tr>
-            </tbody>
-          {% endif %}
-        {% endfor %}
-      </table>
+
     </div>
     <!-- End Historic Table Div-->
 
@@ -140,6 +121,10 @@
                 </div>
 
                 <div class="mb-3">
+                  {{ render_field(form.active, class='form-check-label') }}
+                </div>
+
+                <div class="mb-3">
                   {{ render_field(form.replaceData, class='form-check-label') }}
                 </div>
 
@@ -174,8 +159,67 @@
     <script src="https://code.jquery.com/jquery-3.6.0.js" integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk=" crossorigin="anonymous"></script>
 
     <script>
+
+      /* Everytime the date is selected, call the backend and
+         check to see if data is present. It should show a
+         spinner icon while pulling data. If data is found for
+         the selected date, the form is updated
+      */
+
+      //Get element ID and value
+      var date_input = document.getElementById('todayDate');
+      date_input.valueAsDate = new Date();
+
+      //Bind fn to todayDate date input
+      date_input.onchange = function(){
+        var calendarDate = getCurrentdate();
+        var dbData = checkDateForData(calendarDate);
+
+        if (dbData['data'] == false){
+          console.log('No data found for selected date')
+          document.getElementById('monitor').value = 'LH';
+          document.getElementById('sexyTime').checked = false;
+          document.getElementById('rORg').checked = false;
+          document.getElementById('newCycle').checked = false;
+          document.getElementById('active').checked = false;
+        } else {
+          document.getElementById('monitor').value = dbData['monitor'];
+          document.getElementById('sexyTime').checked = dbData['sexyTime'];
+          document.getElementById('rORg').checked = dbData['rORg'];
+          document.getElementById('newCycle').checked = dbData['newCycle'];
+          document.getElementById('active').checked = false;
+        }
+      }
+
+      //Get the date selected by User
+      function getCurrentdate(){
+        var currentDate = $('#todayDate').val()
+        return currentDate
+      }
+
+      //Query the backend for data
+      function checkDateForData(aDate){
+        var toReturn = null;
+        $.ajax({
+                method: "POST",
+                async: false,
+                data: {'currentDate': aDate},
+                url: "{{ url_for('checkDateForData') }}",
+                success: function(data){
+                  toReturn = data;
+                },
+                error: function(){
+                  console.log("Error - checkDateForData")
+                }
+              })
+              return toReturn;
+      }
+
+      /* This function is ran when the page first loads. If
+         data is present for the day, the modal isn't shown.
+         If no data is present, the modal is shown.
+      */
       function pageLoadFn() {
-        console.log('Page Loading...')
 
         //Function to get current time to set calendar
         Date.prototype.toDateInputValue = (function() {
@@ -189,7 +233,6 @@
 
         //Get current calendar date
         var currentDate = $('#todayDate').val()
-        console.log( currentDate )
 
         $.ajax({
                 method: "POST",
@@ -222,6 +265,8 @@
            }
          }); //End ajax call
 
+         const thead = document.querySelectorAll('.table > thead');
+         thead.forEach(e => e.classList.add('thead-light'));
       }
     </script>
 
