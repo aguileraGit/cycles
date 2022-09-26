@@ -17,6 +17,9 @@ app.secret_key = 'development key'
 
 db = dbCycles.cycleDBClass()
 
+#Historic number of days default
+hisNumDaysDefault = 30
+
 class cycleInputForm(FlaskForm):
     todayDate = DateField('DatePicker', format='%Y-%m-%d')
 
@@ -54,6 +57,7 @@ def checkDateForData():
             #print(result[0])
             return dbToJson(result[0]) #Only pass the single record
 
+
 #This is the main and only page. This will load a modal to
 # get user input. Modal should be disabled when page is
 # loaded and data is present for the day. Use route above.
@@ -63,7 +67,7 @@ def home():
     form = cycleInputForm()
     errors = []
     msg = []
-    historicData = getHistoricData() #Assume today's date on Server
+    historicData = getHistoricData(numDaysBack=hisNumDaysDefault)
 
     if form.validate_on_submit():
         formDate = str(form.todayDate.data)
@@ -74,8 +78,20 @@ def home():
             print('Data Exists for Day')
             dataForDayExists = True
 
+        #Attempt to Delete Data
+        if form.active.data == True:
+            print('Delete Data')
+            try:
+                #Deactive old data
+                deactivateDate(form)
+                #Reload table
+                historicData = getHistoricData(numDaysBack=hisNumDaysDefault)
+                msg.append( 'Data deleted for %s' % (formDate) )
+            except Error as e:
+                error = e
+
         #Attempt to replace data to DB
-        if form.replaceData.data == True:
+        elif form.replaceData.data == True:
             print('Replace Data')
             try:
                 #Deactive old data
@@ -83,7 +99,7 @@ def home():
                 #Add new record
                 addNewRecord(form)
                 #Reload table
-                historicData = getHistoricData() #Need date
+                historicData = getHistoricData(numDaysBack=hisNumDaysDefault) #Need date
                 msg.append( 'Data replaced for %s' % (formDate) )
             except Error as e:
                 error = e
@@ -99,7 +115,7 @@ def home():
                 try:
                     result = addNewRecord(form)
                     #Reload table
-                    historicData = getHistoricData() #Need date
+                    historicData = getHistoricData(numDaysBack=hisNumDaysDefault) #Need date
                     msg.append( 'Data added for %s' % (formDate) )
                 except Error as e:
                     error = e
@@ -128,32 +144,45 @@ def addNewRecord(_form):
 
 
 def deactivateDate(_form):
-    print('Deactive')
     dateToDeactivate = str(_form.todayDate.data)
-    print(dateToDeactivate)
-    print(type(dateToDeactivate))
-    db.deactivateRecordsForDate(dateToDeactivate) #Not working!
+    db.deactivateRecordsForDate(dateToDeactivate)
 
 
-def getHistoricData():
-    historyList = db.getActiveRecordsForDateRange('2022-09-18', '2022-09-09')
+def getHistoricData(datePresent=None, numDaysBack=7):
+    dayPresent = getFormattedDate(datePresent)
+    dayPast = getFormattedDate(shiftDays=numDaysBack)
+
+    historyList = db.getActiveRecordsForDateRange(dayPresent, dayPast)
+
     title = ['ID', 'Record Date', 'Active', 'TimeStamp', 'Monitor', 'SexyTime',
-             'Red Or Green', 'New Cycle']
+             'Green Day', 'New Cycle']
 
     df = pd.DataFrame(historyList)
     df.columns = title
 
+    df.sort_values('Record Date', inplace=True ,ascending=False)
+
     df["SexyTime"] = np.where(df["SexyTime"] == 1, 'Yes', 'No')
-    df["Red Or Green"] = np.where(df["Red Or Green"] == 1, 'Green', 'Red')
+    df["Red Or Green"] = np.where(df["Green Day"] == 1, 'Green', 'Red')
     df["New Cycle"] = np.where(df["New Cycle"] == 1, 'Yes', 'No')
 
     html = df.to_html(justify='left',
+                      index=False,
                       classes='table table-striped table-bordered table-hover table-sm',
                       columns=['Record Date', 'Monitor', 'SexyTime',
-                               'Red Or Green', 'New Cycle'])
-
+                               'Green Day', 'New Cycle'])
     return html
 
+
+def getFormattedDate(_date=None, shiftDays=0):
+    formatString = "%Y-%m-%d"
+    if _date == None:
+        _date = datetime.datetime.now()
+    else:
+        _date = datetime.strptime(_date, formatString)
+    _date = _date - datetime.timedelta(days=shiftDays)
+
+    return _date.strftime(formatString)
 
 def dbToJson(obj):
     toReturn = {'id': obj[0],

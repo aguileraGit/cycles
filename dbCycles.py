@@ -44,7 +44,6 @@ class cycleDBClass():
                  "rORg" INTEGER,
                  "newCycle" INTEGER
                  )'''
-
         try:
             self.cur.execute(sql)
             self.conn.commit()
@@ -85,13 +84,14 @@ class cycleDBClass():
     def deactivateRecordsForDate(self, _date):
         self.openConnection()
         self.createCursor()
-        sql = '''UPDATE readings SET active = 0 WHERE date = ?'''
-
+        sql = '''UPDATE readings SET active = 0 WHERE date = date(?)'''
         try:
-            self.cur.execute(sql, (str(_date),) )
+            self.cur.execute(sql, (_date,) )
             self.conn.commit()
         except Error as e:
             print(e)
+        except Warning as w:
+            print(w)
 
         self.closeConnection()
 
@@ -147,10 +147,10 @@ if __name__ == '__main__':
 
     #db.getAllRecords()
 
-    date = '2022-09-17'
+    date = '2022-09-19'
     db.deactivateRecordsForDate(date)
 
-    #db.getAllRecords()
+    db.getAllRecords()
     #print("\n")
     #print(db.getActiveRecordsForDateRange('2022-09-11', '2022-09-09'))
 
