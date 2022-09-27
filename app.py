@@ -23,8 +23,7 @@ hisNumDaysDefault = 30
 class cycleInputForm(FlaskForm):
     todayDate = DateField('DatePicker', format='%Y-%m-%d')
 
-    monitor = SelectField('Monitor',
-              choices=[('LH','LH'), ('ES','ES')])
+    monitor = IntegerField('Monitor')
 
     sexyTime = BooleanField('Sexy Time')
 
@@ -148,6 +147,12 @@ def deactivateDate(_form):
     db.deactivateRecordsForDate(dateToDeactivate)
 
 
+#Looks at past data per cycles. First need to go back per cycle or number of
+# days. Query DB: Select Date when active = 1. Then query each cycle per
+# query. Add Plot.ly plot. This should be called from the front end?
+def getHistoricDataV2(datePresent, numDaysBack=7):
+    pass
+
 def getHistoricData(datePresent=None, numDaysBack=7):
     dayPresent = getFormattedDate(datePresent)
     dayPast = getFormattedDate(shiftDays=numDaysBack)
@@ -160,7 +165,7 @@ def getHistoricData(datePresent=None, numDaysBack=7):
     df = pd.DataFrame(historyList)
     df.columns = title
 
-    df.sort_values('Record Date', inplace=True ,ascending=False)
+    df.sort_values('Record Date', inplace=True, ascending=False)
 
     df["SexyTime"] = np.where(df["SexyTime"] == 1, 'Yes', 'No')
     df["Red Or Green"] = np.where(df["Green Day"] == 1, 'Green', 'Red')

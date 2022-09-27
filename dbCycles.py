@@ -1,6 +1,7 @@
 import sqlite3
 from sqlite3 import Error
 import datetime
+import random
 
 
 class cycleDBClass():
@@ -39,7 +40,7 @@ class cycleDBClass():
                  "date" DATE,
                  "active" INTEGER,
                  "timestamp" DATE,
-                 "monitor" TEXT,
+                 "monitor" INTEGER,
                  "sexyTime" INTEGER,
                  "rORg" INTEGER,
                  "newCycle" INTEGER
@@ -136,6 +137,31 @@ class cycleDBClass():
         self.closeConnection()
 
 
+    def generateFakeData(self):
+        baseVals = [2, 2, 3, 4,
+                    3, 2, 3, 4,
+                    7, 9, 7, 4,
+                    3, 2, 3, 2]
+
+        for cycCount in range(1, 3):
+
+            for idx, d in enumerate(baseVals):
+                var = d * random.uniform(1.0, 3.0)
+                dateTS = datetime.datetime.now()
+                dateTS = dateTS - datetime.timedelta(days=idx*cycCount)
+                date = dateTS.strftime('%Y-%m-%d')
+
+                r = {'recordDate': date,
+                      'active': 1,
+                      'timestamp': dateTS,
+                      'monitor': int(var),
+                      'st': random.randint(0, 1),
+                      'rOrG': random.randint(0, 1),
+                      'nc': 0 if (idx != 15) else 1}
+
+                self.addRecord(r['recordDate'], r['active'],
+                                r['timestamp'], r['monitor'],
+                                r['st'], r['rOrG'], r['nc'])
 
 if __name__ == '__main__':
     print('dbCycles.py')
@@ -143,14 +169,14 @@ if __name__ == '__main__':
 
     db.createTable()
 
-    #db.addRecord('2022-09-07', 1, str(datetime.datetime.now()), 'LH', 0, 'G', 12)
-
-    #db.getAllRecords()
-
-    date = '2022-09-19'
-    db.deactivateRecordsForDate(date)
+    db.generateFakeData()
 
     db.getAllRecords()
+
+    #date = '2022-09-19'
+    #db.deactivateRecordsForDate(date)
+
+    #db.getAllRecords()
     #print("\n")
     #print(db.getActiveRecordsForDateRange('2022-09-11', '2022-09-09'))
 
