@@ -143,12 +143,13 @@ class cycleDBClass():
                     7, 9, 7, 4,
                     3, 2, 3, 2]
 
-        for cycCount in range(1, 3):
+        for cycCount in range(0, 3):
 
             for idx, d in enumerate(baseVals):
                 var = d * random.uniform(1.0, 3.0)
+                offset = idx + (cycCount * 16)
                 dateTS = datetime.datetime.now()
-                dateTS = dateTS - datetime.timedelta(days=idx*cycCount)
+                dateTS = dateTS - datetime.timedelta(days=offset)
                 date = dateTS.strftime('%Y-%m-%d')
 
                 r = {'recordDate': date,
@@ -163,6 +164,18 @@ class cycleDBClass():
                                 r['timestamp'], r['monitor'],
                                 r['st'], r['rOrG'], r['nc'])
 
+    def getCycleDates(self, limit=-1):
+        self.openConnection()
+        self.createCursor()
+        sql = '''SELECT date FROM readings WHERE newCycle == 1 LIMIT ?'''
+        try:
+            result = self.cur.execute(sql, (limit,)).fetchall()
+            return result
+        except Error as e:
+            print(e)
+        self.closeConnection()
+        
+                
 if __name__ == '__main__':
     print('dbCycles.py')
     db = cycleDBClass()
