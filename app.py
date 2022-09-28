@@ -150,8 +150,15 @@ def deactivateDate(_form):
 #Looks at past data per cycles. First need to go back per cycle or number of
 # days. Query DB: Select Date when active = 1. Then query each cycle per
 # query. Add Plot.ly plot. This should be called from the front end?
-def getHistoricDataV2(datePresent, numDaysBack=7):
-    pass
+def getHistoricDataV2(datePresent, numOfCycles=3):
+    worstCaseCycleLen = 20
+
+    dayPresent = getFormattedDate(datePresent)
+    dayPast = getFormattedDate(shiftDays=numOfCycles * worstCaseCycleLen)
+    rawDataList = db.getActiveRecordsForDateRange(dayPresent, dayPast)
+
+    
+
 
 def getHistoricData(datePresent=None, numDaysBack=7):
     dayPresent = getFormattedDate(datePresent)
