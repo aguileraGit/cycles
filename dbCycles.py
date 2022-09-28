@@ -167,7 +167,7 @@ class cycleDBClass():
     def getCycleDates(self, limit=-1):
         self.openConnection()
         self.createCursor()
-        sql = '''SELECT date FROM readings WHERE newCycle == 1 LIMIT ?'''
+        sql = '''SELECT date FROM readings WHERE newCycle == 1 AND active == 1 ORDER BY date ASC LIMIT (?)'''
         try:
             result = self.cur.execute(sql, (limit,)).fetchall()
             return result
