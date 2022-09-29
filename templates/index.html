@@ -9,7 +9,7 @@
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.1.2/css/fontawesome.min.css" integrity="sha384-X8QTME3FCg1DLb58++lPvsjbQoCT9bp3MsUU3grbIny/3ZwUJkRNO8NPW6zqzuW9" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css">
-      
+
   </head>
 
 
@@ -59,34 +59,25 @@
     </div>
     <!-- End Intro Text Div-->
 
-    <!-- Historic Table Div -->
+    <!-- Button trigger modal -->
     <div class="container">
+      <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#staticBackdrop">
+        Add or Replace Data
+      </button>
+    </div>
+
+    <!-- Historic Table Div -->
+    <div class="w-75 container">
 
         {% for plot in historicData %}
             {{ plot|safe }}
         {% endfor %}
 
-
     </div>
     <!-- End Historic Table Div-->
 
-    <div class="container">
-      <!--
-      Need to think about webpage will look like.<br>
-      I envision either a table with historical data or <br>
-      a way to select a day to view data.<p>
-      Maybe an analytics tab later on for cycle duration <br>
-      and maybe even predictions. This could be a seperate <br>
-      function that runs daily and generates HTML that is <br>
-      loaded via djanjo.
-      -->
-    </div>
 
     <div class="container">
-      <!-- Button trigger modal -->
-      <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#staticBackdrop">
-        Add or Replace Data
-      </button>
 
       <!-- Modal -->
       <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
@@ -142,6 +133,7 @@
             <div class="modal-footer">
               <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
+
           </div>
         </div>
       </div>
@@ -160,7 +152,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.min.js" integrity="sha384-kjU+l4N0Yf4ZOJErLsIcvOU2qSb74wXpOhqTvwVx3OElZRweTnQ6d31fXEoRD1Jy" crossorigin="anonymous"></script>
 
     <script src="https://code.jquery.com/jquery-3.6.0.js" integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk=" crossorigin="anonymous"></script>
-      
+
     <script src="https://cdn.plot.ly/plotly-2.14.0.min.js"></script>
 
     <script>

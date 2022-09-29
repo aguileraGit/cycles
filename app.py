@@ -13,6 +13,11 @@ import plotly.express as px
 
 import dbCycles
 
+#Look at deployment vs development: https://flask.palletsprojects.com/en/2.2.x/config/
+# Idea would be to load proper database and maybe logins.
+# Would need to remember to set to deploy
+# Or keep two directories (dev and prod). Use enviro export ... won't work
+# those are system wide.
 app = Flask(__name__)
 app.secret_key = 'development key'
 
