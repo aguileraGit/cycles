@@ -66,7 +66,7 @@ def home():
     form = cycleInputForm()
     errors = []
     msg = []
-    historicData = getHistoricData(numDaysBack=hisNumDaysDefault)
+    historicData = getHistoricDataV2()
 
     if form.validate_on_submit():
         formDate = str(form.todayDate.data)
@@ -84,7 +84,7 @@ def home():
                 #Deactive old data
                 deactivateDate(form)
                 #Reload table
-                historicData = getHistoricData(numDaysBack=hisNumDaysDefault)
+                historicData = getHistoricDataV2()
                 msg.append( 'Data deleted for %s' % (formDate) )
             except Error as e:
                 error = e
@@ -98,7 +98,7 @@ def home():
                 #Add new record
                 addNewRecord(form)
                 #Reload table
-                historicData = getHistoricData(numDaysBack=hisNumDaysDefault) #Need date
+                historicData = getHistoricDataV2()
                 msg.append( 'Data replaced for %s' % (formDate) )
             except Error as e:
                 error = e
@@ -114,7 +114,7 @@ def home():
                 try:
                     result = addNewRecord(form)
                     #Reload table
-                    historicData = getHistoricData(numDaysBack=hisNumDaysDefault) #Need date
+                    historicData = getHistoricDataV2()
                     msg.append( 'Data added for %s' % (formDate) )
                 except Error as e:
                     error = e
@@ -147,19 +147,6 @@ def deactivateDate(_form):
     db.deactivateRecordsForDate(dateToDeactivate)
 
 
-#Looks at past data per cycles. First need to go back per cycle or number of
-# days. Query DB: Select Date when active = 1. Then query each cycle per
-# query. Add Plot.ly plot. This should be called from the front end?
-def getHistoricDataV2(datePresent, numOfCycles=3):
-    worstCaseCycleLen = 20
-
-    dayPresent = getFormattedDate(datePresent)
-    dayPast = getFormattedDate(shiftDays=numOfCycles * worstCaseCycleLen)
-    rawDataList = db.getActiveRecordsForDateRange(dayPresent, dayPast)
-
-    
-
-
 def getHistoricData(datePresent=None, numDaysBack=7):
     dayPresent = getFormattedDate(datePresent)
     dayPast = getFormattedDate(shiftDays=numDaysBack)
@@ -184,6 +171,46 @@ def getHistoricData(datePresent=None, numDaysBack=7):
                       columns=['Record Date', 'Monitor', 'SexyTime',
                                'Green Day', 'New Cycle'])
     return html
+
+#Looks at past data per cycles. First need to go back per cycle or number of
+# days. Query DB: Select Date when active = 1. Then query each cycle per
+# query. Add Plot.ly plot. This should be called from the front end?
+def getHistoricDataV2(numOfCycles=3):
+    
+    #Fetch start date of cycles
+    data = db.getCycleDates(numOfCycles)
+
+    #https://stackoverflow.com/questions/10632839/transform-list-of-tuples-into-a-flat-list-or-a-matrix
+    startDateList = list(sum(data, ()))
+    
+    #Add today's date to list. Reverse to start with most recent
+    startDateList.append( getFormattedDate() )    
+    startDateList.reverse()
+    
+    #Create empty list to store each DF. Each DF is a cycle
+    global dfs
+    dfs = []
+    
+    #Loop through start dates except last date
+    for idx,startDate in enumerate(startDateList[:-1]):
+        endDate = startDateList[idx+1]
+    
+        rawDataList = db.getActiveRecordsForDateRange(startDate, endDate)
+
+        title = ['ID', 'Record Date', 'Active', 'TimeStamp', 'Monitor', 'SexyTime',
+                 'Green Day', 'New Cycle']
+
+        tempDF = pd.DataFrame(rawDataList)
+        tempDF.columns = title
+
+        tempDF.sort_values('Record Date', inplace=True, ascending=False)
+        
+        #Need to remove row 1 if idx > 1
+        
+        #dfs.append(tempDF)
+        dfs.append(fig.to_html(include_plotlyjs=False, full_html=False))
+
+    return dfs
 
 
 def getFormattedDate(_date=None, shiftDays=0):
