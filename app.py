@@ -9,6 +9,7 @@ import datetime
 
 import pandas as pd
 import numpy as np
+import plotly.express as px
 
 import dbCycles
 
@@ -176,25 +177,24 @@ def getHistoricData(datePresent=None, numDaysBack=7):
 # days. Query DB: Select Date when active = 1. Then query each cycle per
 # query. Add Plot.ly plot. This should be called from the front end?
 def getHistoricDataV2(numOfCycles=3):
-    
+
     #Fetch start date of cycles
     data = db.getCycleDates(numOfCycles)
 
     #https://stackoverflow.com/questions/10632839/transform-list-of-tuples-into-a-flat-list-or-a-matrix
     startDateList = list(sum(data, ()))
-    
+
     #Add today's date to list. Reverse to start with most recent
-    startDateList.append( getFormattedDate() )    
+    startDateList.append( getFormattedDate() )
     startDateList.reverse()
-    
+
     #Create empty list to store each DF. Each DF is a cycle
-    global dfs
     dfs = []
-    
+
     #Loop through start dates except last date
     for idx,startDate in enumerate(startDateList[:-1]):
         endDate = startDateList[idx+1]
-    
+
         rawDataList = db.getActiveRecordsForDateRange(startDate, endDate)
 
         title = ['ID', 'Record Date', 'Active', 'TimeStamp', 'Monitor', 'SexyTime',
@@ -204,11 +204,17 @@ def getHistoricDataV2(numOfCycles=3):
         tempDF.columns = title
 
         tempDF.sort_values('Record Date', inplace=True, ascending=False)
-        
+
         #Need to remove row 1 if idx > 1
-        
+
         #dfs.append(tempDF)
-        dfs.append(fig.to_html(include_plotlyjs=False, full_html=False))
+
+        #Create figures
+        fig = px.line(tempDF, x='Record Date', y='Monitor', markers=True)
+        #Format date and center point
+        fig.update_xaxes(tickformat='%Y-%m-%d', ticklabelmode='period')
+
+        dfs.append(fig.to_html(include_plotlyjs='cdn', full_html=False))
 
     return dfs
 
