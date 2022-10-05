@@ -40,7 +40,7 @@ class cycleDBClass():
                  "date" DATE,
                  "active" INTEGER,
                  "timestamp" DATE,
-                 "monitor" INTEGER,
+                 "monitor" TEXT,
                  "sexyTime" INTEGER,
                  "rORg" INTEGER,
                  "newCycle" INTEGER
@@ -138,15 +138,16 @@ class cycleDBClass():
 
 
     def generateFakeData(self):
-        baseVals = [2, 2, 3, 4,
-                    3, 2, 3, 4,
-                    7, 9, 7, 4,
-                    3, 2, 3, 2]
+        baseVals = ['L', 'L', 'L', 'L',
+                    'L', 'L', 'L', 'L',
+                    'H', 'P', 'P', 'H',
+                    'L', 'L', 'L', 'L']
 
         for cycCount in range(0, 3):
 
             for idx, d in enumerate(baseVals):
-                var = d * random.uniform(1.0, 3.0)
+                #var = int(d * random.uniform(1.0, 3.0))
+                var = d
                 offset = idx + (cycCount * 16)
                 dateTS = datetime.datetime.now()
                 dateTS = dateTS - datetime.timedelta(days=offset)
@@ -155,7 +156,7 @@ class cycleDBClass():
                 r = {'recordDate': date,
                       'active': 1,
                       'timestamp': dateTS,
-                      'monitor': int(var),
+                      'monitor': var,
                       'st': random.randint(0, 1),
                       'rOrG': random.randint(0, 1),
                       'nc': 0 if (idx != 15) else 1}
@@ -174,8 +175,8 @@ class cycleDBClass():
         except Error as e:
             print(e)
         self.closeConnection()
-        
-                
+
+
 if __name__ == '__main__':
     print('dbCycles.py')
     db = cycleDBClass()
