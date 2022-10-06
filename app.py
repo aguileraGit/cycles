@@ -4,6 +4,8 @@ from wtforms import StringField, validators, SubmitField, IntegerField, SelectFi
 from wtforms.validators import DataRequired, InputRequired
 from wtforms.fields import DateField
 
+from turbo_flask import Turbo
+
 from sqlite3 import Error
 import datetime
 
@@ -20,6 +22,8 @@ import dbCycles
 # those are system wide.
 app = Flask(__name__)
 app.secret_key = 'development key'
+
+turbo = Turbo(app)
 
 db = dbCycles.cycleDBClass()
 
@@ -74,6 +78,9 @@ def home():
     errors = []
     msg = []
 
+    #Anytime main page is loaded, start generating plots
+    getCyclePlots()
+
     if form.validate_on_submit():
         formDate = str(form.todayDate.data)
 
@@ -123,13 +130,11 @@ def home():
 
         return render_template('index.html', form=form,
                                              errors=errors,
-                                             msg=msg,
-                                             )
+                                             msg=msg)
 
     return render_template('index.html', form=form,
                                          errors=errors,
-                                         msg=msg,
-                                         )
+                                         msg=msg)
 
 
 def addNewRecord(_form):
@@ -217,8 +222,7 @@ def getHistoricDataV2(numOfCycles=3):
 
     return dfs
 
-
-@app.route('/getCyclePlots', methods=['GET', 'POST'])
+@app.context_processor
 def getCyclePlots(numOfCycles=3):
     #Create list of dicts to store data
     cycleStats = []
@@ -229,14 +233,21 @@ def getCyclePlots(numOfCycles=3):
         endDate = df['Record Date'].iloc[0]
         cycleDuration = len(df)
 
-        div = generatePlot(df)
+        #div = generatePlot(df)
 
         cycleStats.append({'startDate': startDate,
                            'endDate': endDate,
                            'cycleDuration': cycleDuration,
-                           'plot': div
+                           'plot': None
                           })
-    print(cycleStats)
+
+    threading.Thread(target=updateCycleInfo).start()
+
+    return cycleStats
+
+def updateCycleInfo()
+    with app.app_context():
+        turbo.append(render_template('plotDiv.html'), 'historicData')
 
 
 def generateDFs(numOfCycles=3):
