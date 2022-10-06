@@ -157,12 +157,6 @@
 
     <script>
 
-      /* Everytime the date is selected, call the backend and
-         check to see if data is present. It should show a
-         spinner icon while pulling data. If data is found for
-         the selected date, the form is updated
-      */
-
       //Get element ID and value
       var date_input = document.getElementById('todayDate');
       date_input.valueAsDate = new Date();
@@ -244,8 +238,6 @@
              //Show Modal
              $("#staticBackdrop").modal("show");
 
-             //Disable replaceData Boolean
-
           //Error
            } else if (result['error'] == 'Multiple Records found'){
              console.log('Multiple Records found')
@@ -257,10 +249,14 @@
              //Show Modal
              $("#staticBackdrop").modal("hide");
 
-             //Enable replaceData Boolean
-
            }
-         }); //End ajax call
+         }); //End ajax call to check for data on date
+
+         //Calling this starts generating plots in backend
+         $.ajax({
+                 method: "POST",
+                 url: "{{ url_for('getCyclePlots') }}",
+               })
 
          const thead = document.querySelectorAll('.table > thead');
          thead.forEach(e => e.classList.add('thead-light'));

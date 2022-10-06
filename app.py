@@ -9,7 +9,7 @@ import datetime
 
 import pandas as pd
 import numpy as np
-import plotly.express as px
+import plotly.graph_objects as go
 
 import dbCycles
 
@@ -29,7 +29,8 @@ hisNumDaysDefault = 30
 class cycleInputForm(FlaskForm):
     todayDate = DateField('DatePicker', format='%Y-%m-%d')
 
-    monitor = IntegerField('Monitor')
+    monitor = StringField('Monitor')
+    #Need to add check for LPH or number
 
     sexyTime = BooleanField('Sexy Time')
 
@@ -72,7 +73,6 @@ def home():
     form = cycleInputForm()
     errors = []
     msg = []
-    historicData = getHistoricDataV2()
 
     if form.validate_on_submit():
         formDate = str(form.todayDate.data)
@@ -89,8 +89,6 @@ def home():
             try:
                 #Deactive old data
                 deactivateDate(form)
-                #Reload table
-                historicData = getHistoricDataV2()
                 msg.append( 'Data deleted for %s' % (formDate) )
             except Error as e:
                 error = e
@@ -103,8 +101,6 @@ def home():
                 deactivateDate(form)
                 #Add new record
                 addNewRecord(form)
-                #Reload table
-                historicData = getHistoricDataV2()
                 msg.append( 'Data replaced for %s' % (formDate) )
             except Error as e:
                 error = e
@@ -119,8 +115,6 @@ def home():
             else:
                 try:
                     result = addNewRecord(form)
-                    #Reload table
-                    historicData = getHistoricDataV2()
                     msg.append( 'Data added for %s' % (formDate) )
                 except Error as e:
                     error = e
@@ -130,19 +124,19 @@ def home():
         return render_template('index.html', form=form,
                                              errors=errors,
                                              msg=msg,
-                                             historicData=historicData)
+                                             )
 
     return render_template('index.html', form=form,
                                          errors=errors,
                                          msg=msg,
-                                         historicData=historicData)
+                                         )
 
 
 def addNewRecord(_form):
     db.addRecord( str(_form.todayDate.data), #Date
                   int(1), #Active
                   str(datetime.datetime.now()), #TimeStamp
-                  str(_form.monitor.data), #Monitor
+                  (str(_form.monitor.data)).upper(), #Monitor
                   int(_form.sexyTime.data),
                   int(_form.rORg.data),
                   int(_form.newCycle.data))
@@ -222,6 +216,122 @@ def getHistoricDataV2(numOfCycles=3):
         dfs.append(fig.to_html(include_plotlyjs='cdn', full_html=False))
 
     return dfs
+
+
+@app.route('/getCyclePlots', methods=['GET', 'POST'])
+def getCyclePlots(numOfCycles=3):
+    #Create list of dicts to store data
+    cycleStats = []
+    dfs = generateDFs(numOfCycles=numOfCycles)
+
+    for df in dfs:
+        startDate = df['Record Date'].iloc[-1]
+        endDate = df['Record Date'].iloc[0]
+        cycleDuration = len(df)
+
+        div = generatePlot(df)
+
+        cycleStats.append({'startDate': startDate,
+                           'endDate': endDate,
+                           'cycleDuration': cycleDuration,
+                           'plot': div
+                          })
+    print(cycleStats)
+
+
+def generateDFs(numOfCycles=3):
+    #Fetch start date of cycles
+    data = db.getCycleDates(numOfCycles)
+
+    #https://stackoverflow.com/questions/10632839/transform-list-of-tuples-into-a-flat-list-or-a-matrix
+    startDateList = list(sum(data, ()))
+
+    #Add today's date to list. Reverse to start with most recent
+    startDateList.append( getFormattedDate() )
+    startDateList.reverse()
+
+    #Create empty list to store each DF. Each DF is a cycle
+    dfs = []
+
+    #Loop through start dates except last date
+    for idx,startDate in enumerate(startDateList[:-1]):
+        endDate = startDateList[idx+1]
+
+        rawDataList = db.getActiveRecordsForDateRange(startDate, endDate)
+
+        title = ['ID', 'Record Date', 'Active', 'TimeStamp', 'Monitor', 'SexyTime',
+                 'Green Day', 'New Cycle']
+
+        tempDF = pd.DataFrame(rawDataList)
+        tempDF.columns = title
+
+        tempDF.sort_values('Record Date', inplace=True, ascending=False)
+
+        #Add column with increasing integer to aid in plot later on
+        tempIntList = np.arange(tempDF.shape[0])
+        tempDF['Cycle Count'] = tempIntList[::-1]
+
+        #Map LHP to numbers for easier plotting
+        tempDF['Monitor'] = tempDF['Monitor'].map( {'L':0 , 'H':1, 'P':2} )
+
+        dfs.append(tempDF)
+    return dfs
+
+def generatePlot(df):
+    fig = go.Figure()
+
+    #Add Cycle Count. Annotations using df is not supported
+    dates = df['Record Date'].tolist()
+    text = df['Cycle Count'].tolist()
+    for i in range(len(dates)):
+        fig.add_annotation(x=dates[i], y=0,
+                text=text[i],
+                showarrow=False,
+                arrowhead=1,
+                yshift=12)
+
+    #Add Red/Green rectangles. DFs not supported.
+    color = df['Green Day'].tolist()
+    for i in range(len(dates)):
+        startRect = datetime.datetime.strptime(dates[i], '%Y-%m-%d')
+        startRect = startRect - datetime.timedelta(days=0.5)
+        startRect = startRect.strftime('%Y-%m-%d %H:%M')
+
+        endRect = datetime.datetime.strptime(dates[i], '%Y-%m-%d')
+        endRect = endRect + datetime.timedelta(days=0.5)
+        endRect = endRect.strftime('%Y-%m-%d %H:%M')
+
+
+        fig.add_vline(x=startRect, line_width=1, line_dash="dash", line_color="black", opacity=0.8)
+        fig.add_vline(x=endRect, line_width=1, line_dash="dash", line_color="black", opacity=0.8)
+
+        if color[i] == 0:
+            fig.add_vrect(x0=startRect, x1=endRect, line_width=0, fillcolor="red", opacity=0.1)
+        else:
+            fig.add_vrect(x0=startRect, x1=endRect, line_width=0, fillcolor="green", opacity=0.1)
+
+
+    fig.add_trace(go.Scatter(x=df['Record Date'],
+                             y=df['Monitor'],
+                             mode='lines+markers',
+                             line_color='black'))
+
+
+    fig.update_xaxes(
+        tickformat='%m/%d',
+        tickangle = 90,
+        dtick=86400000, #dticks is in milliseconds
+        ticks='outside',
+        tickson='boundaries')
+
+    fig.update_yaxes(
+        nticks=3,
+        showticklabels=True,
+        ticktext=['L', 'H', 'P'],
+        tickvals=[0, 1, 2]
+    )
+
+    return fig.to_html(include_plotlyjs='cdn', full_html=False)
 
 
 def getFormattedDate(_date=None, shiftDays=0):
