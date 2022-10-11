@@ -15,6 +15,10 @@ import plotly.graph_objects as go
 
 import dbCycles
 
+import threading
+import time
+import random
+
 #Look at deployment vs development: https://flask.palletsprojects.com/en/2.2.x/config/
 # Idea would be to load proper database and maybe logins.
 # Would need to remember to set to deploy
@@ -79,7 +83,7 @@ def home():
     msg = []
 
     #Anytime main page is loaded, start generating plots
-    getCyclePlots()
+    generateCycleDivs()
 
     if form.validate_on_submit():
         formDate = str(form.todayDate.data)
@@ -222,8 +226,10 @@ def getHistoricDataV2(numOfCycles=3):
 
     return dfs
 
+
 @app.context_processor
-def getCyclePlots(numOfCycles=3):
+def generateCycleDivs(numOfCycles=3):
+    '''
     #Create list of dicts to store data
     cycleStats = []
     dfs = generateDFs(numOfCycles=numOfCycles)
@@ -244,8 +250,33 @@ def getCyclePlots(numOfCycles=3):
     threading.Thread(target=updateCycleInfo).start()
 
     return cycleStats
+    '''
 
-def updateCycleInfo()
+    print('Updated cycleStats')
+    cycleStats = {'startDate': '11/2',
+                       'endDate': '11/3',
+                       'cycleDuration': str(random.randint(0, 100))
+                      }
+
+    return cycleStats
+
+
+@app.before_first_request
+def startBackgroundThread():
+    threading.Thread(target=pushDataThread).start()
+
+
+
+def pushDataThread():
+    with app.app_context():
+        while True:
+            time.sleep(5)
+            print('Thread')
+            turbo.push(turbo.append(render_template('plotDiv.html'), 'historicData'))
+
+
+
+def updateCycleInfo():
     with app.app_context():
         turbo.append(render_template('plotDiv.html'), 'historicData')
 

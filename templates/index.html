@@ -68,11 +68,9 @@
     </div>
 
     <!-- Historic Table Div -->
-    <div class="w-75 container">
+    <div class="w-75 container" id="historicData">
 
-        {% for plot in historicData %}
-            {{ plot|safe }}
-        {% endfor %}
+        {% include "plotDiv.html" %}
 
     </div>
     <!-- End Historic Table Div-->
