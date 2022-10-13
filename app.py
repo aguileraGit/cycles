@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, flash, jsonify, make_response
+from flask import Flask, render_template, request, flash, jsonify, make_response, g
 from flask_wtf import FlaskForm
 from wtforms import StringField, validators, SubmitField, IntegerField, SelectField, BooleanField
 from wtforms.validators import DataRequired, InputRequired
@@ -16,8 +16,11 @@ import plotly.graph_objects as go
 import dbCycles
 
 import threading
+import queue
 import time
 import random
+import os
+import uuid
 
 #Look at deployment vs development: https://flask.palletsprojects.com/en/2.2.x/config/
 # Idea would be to load proper database and maybe logins.
@@ -30,6 +33,8 @@ app.secret_key = 'development key'
 turbo = Turbo(app)
 
 db = dbCycles.cycleDBClass()
+
+dateListQueue = queue.Queue()
 
 #Historic number of days default
 hisNumDaysDefault = 30
@@ -83,7 +88,7 @@ def home():
     msg = []
 
     #Anytime main page is loaded, start generating plots
-    generateCycleDivs()
+    initCycleDivs()
 
     if form.validate_on_submit():
         formDate = str(form.todayDate.data)
@@ -227,61 +232,7 @@ def getHistoricDataV2(numOfCycles=3):
     return dfs
 
 
-@app.context_processor
-def generateCycleDivs(numOfCycles=3):
-    '''
-    #Create list of dicts to store data
-    cycleStats = []
-    dfs = generateDFs(numOfCycles=numOfCycles)
-
-    for df in dfs:
-        startDate = df['Record Date'].iloc[-1]
-        endDate = df['Record Date'].iloc[0]
-        cycleDuration = len(df)
-
-        #div = generatePlot(df)
-
-        cycleStats.append({'startDate': startDate,
-                           'endDate': endDate,
-                           'cycleDuration': cycleDuration,
-                           'plot': None
-                          })
-
-    threading.Thread(target=updateCycleInfo).start()
-
-    return cycleStats
-    '''
-
-    print('Updated cycleStats')
-    cycleStats = {'startDate': '11/2',
-                       'endDate': '11/3',
-                       'cycleDuration': str(random.randint(0, 100))
-                      }
-
-    return cycleStats
-
-
-@app.before_first_request
-def startBackgroundThread():
-    threading.Thread(target=pushDataThread).start()
-
-
-
-def pushDataThread():
-    with app.app_context():
-        while True:
-            time.sleep(5)
-            print('Thread')
-            turbo.push(turbo.append(render_template('plotDiv.html'), 'historicData'))
-
-
-
-def updateCycleInfo():
-    with app.app_context():
-        turbo.append(render_template('plotDiv.html'), 'historicData')
-
-
-def generateDFs(numOfCycles=3):
+def initCycleDivs(numOfCycles=3):
     #Fetch start date of cycles
     data = db.getCycleDates(numOfCycles)
 
@@ -292,32 +243,75 @@ def generateDFs(numOfCycles=3):
     startDateList.append( getFormattedDate() )
     startDateList.reverse()
 
-    #Create empty list to store each DF. Each DF is a cycle
-    dfs = []
-
     #Loop through start dates except last date
     for idx,startDate in enumerate(startDateList[:-1]):
         endDate = startDateList[idx+1]
 
-        rawDataList = db.getActiveRecordsForDateRange(startDate, endDate)
+        #Push to queue
+        dateListQueue.put((startDate, endDate))
 
-        title = ['ID', 'Record Date', 'Active', 'TimeStamp', 'Monitor', 'SexyTime',
-                 'Green Day', 'New Cycle']
 
-        tempDF = pd.DataFrame(rawDataList)
-        tempDF.columns = title
+def generateCycleDivs(df, img):
+    startDate = df['Record Date'].iloc[-1]
+    endDate = df['Record Date'].iloc[0]
+    cycleDuration = len(df)
 
-        tempDF.sort_values('Record Date', inplace=True, ascending=False)
+    g.startDate = startDate
+    g.endDate = endDate
+    g.cycleDuration = cycleDuration
+    g.imgLocation = img
 
-        #Add column with increasing integer to aid in plot later on
-        tempIntList = np.arange(tempDF.shape[0])
-        tempDF['Cycle Count'] = tempIntList[::-1]
 
-        #Map LHP to numbers for easier plotting
-        tempDF['Monitor'] = tempDF['Monitor'].map( {'L':0 , 'H':1, 'P':2} )
+@app.before_first_request
+def startBackgroundThread():
+    threading.Thread(target=pushDataThread).start()
 
-        dfs.append(tempDF)
-    return dfs
+
+def pushDataThread():
+    with app.app_context():
+        while True:
+            if dateListQueue.empty():
+                print('Queue empty')
+                time.sleep(1)
+            else:
+                print('Items in queue')
+
+                #Get date from queue
+                dates = dateListQueue.get()
+                startDate = dates[0]
+                endDate = dates[1]
+
+                df = generateDF(startDate, endDate)
+
+                #Create image
+                img = generatePlot(df)
+
+                #Returns dict to app with context_processor
+                generateCycleDivs(df, img)
+
+                turbo.push(turbo.append(render_template('plotDiv.html'), 'historicData'))
+
+
+def generateDF(startDate, endDate):
+    rawDataList = db.getActiveRecordsForDateRange(startDate, endDate)
+
+    title = ['ID', 'Record Date', 'Active', 'TimeStamp', 'Monitor', 'SexyTime',
+             'Green Day', 'New Cycle']
+
+    tempDF = pd.DataFrame(rawDataList)
+    tempDF.columns = title
+
+    tempDF.sort_values('Record Date', inplace=True, ascending=False)
+
+    #Add column with increasing integer to aid in plot later on
+    tempIntList = np.arange(tempDF.shape[0])
+    tempDF['Cycle Count'] = tempIntList[::-1]
+
+    #Map LHP to numbers for easier plotting
+    tempDF['Monitor'] = tempDF['Monitor'].map( {'L':0 , 'H':1, 'P':2} )
+
+    return tempDF
+
 
 def generatePlot(df):
     fig = go.Figure()
@@ -343,7 +337,6 @@ def generatePlot(df):
         endRect = endRect + datetime.timedelta(days=0.5)
         endRect = endRect.strftime('%Y-%m-%d %H:%M')
 
-
         fig.add_vline(x=startRect, line_width=1, line_dash="dash", line_color="black", opacity=0.8)
         fig.add_vline(x=endRect, line_width=1, line_dash="dash", line_color="black", opacity=0.8)
 
@@ -352,12 +345,10 @@ def generatePlot(df):
         else:
             fig.add_vrect(x0=startRect, x1=endRect, line_width=0, fillcolor="green", opacity=0.1)
 
-
     fig.add_trace(go.Scatter(x=df['Record Date'],
                              y=df['Monitor'],
                              mode='lines+markers',
                              line_color='black'))
-
 
     fig.update_xaxes(
         tickformat='%m/%d',
@@ -373,7 +364,11 @@ def generatePlot(df):
         tickvals=[0, 1, 2]
     )
 
-    return fig.to_html(include_plotlyjs='cdn', full_html=False)
+    #return fig.to_html(include_plotlyjs='cdn', full_html=False)
+    _location = 'static/plots/' + str(uuid.uuid4()) + '.png'
+    fig.write_image(_location)
+
+    return _location
 
 
 def getFormattedDate(_date=None, shiftDays=0):

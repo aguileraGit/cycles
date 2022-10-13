@@ -1,6 +1,9 @@
-<div>
-  test
-  {{ startDate }}
-  {{ endDate }}
-  {{ cycleDuration }}
+<div class="card m-4 w-75">
+  <div class="card-header">
+    <h5>Dates: {{ g.startDate }} - {{ g.endDate }}</h5>
+  </div>
+  <div class="card-body">
+    <h6 class="card-title">Duration: {{ g.cycleDuration }} days</h6>
+    <p><img src="{{ g.imgLocation }}" alt="Plot"></p>
+  </div>
 </div>
