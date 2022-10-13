@@ -161,77 +161,6 @@ def deactivateDate(_form):
     db.deactivateRecordsForDate(dateToDeactivate)
 
 
-def getHistoricData(datePresent=None, numDaysBack=7):
-    dayPresent = getFormattedDate(datePresent)
-    dayPast = getFormattedDate(shiftDays=numDaysBack)
-
-    historyList = db.getActiveRecordsForDateRange(dayPresent, dayPast)
-
-    title = ['ID', 'Record Date', 'Active', 'TimeStamp', 'Monitor', 'SexyTime',
-             'Green Day', 'New Cycle']
-
-    df = pd.DataFrame(historyList)
-    df.columns = title
-
-    df.sort_values('Record Date', inplace=True, ascending=False)
-
-    df["SexyTime"] = np.where(df["SexyTime"] == 1, 'Yes', 'No')
-    df["Red Or Green"] = np.where(df["Green Day"] == 1, 'Green', 'Red')
-    df["New Cycle"] = np.where(df["New Cycle"] == 1, 'Yes', 'No')
-
-    html = df.to_html(justify='left',
-                      index=False,
-                      classes='table table-striped table-bordered table-hover table-sm',
-                      columns=['Record Date', 'Monitor', 'SexyTime',
-                               'Green Day', 'New Cycle'])
-    return html
-
-#Looks at past data per cycles. First need to go back per cycle or number of
-# days. Query DB: Select Date when active = 1. Then query each cycle per
-# query. Add Plot.ly plot. This should be called from the front end?
-def getHistoricDataV2(numOfCycles=3):
-
-    #Fetch start date of cycles
-    data = db.getCycleDates(numOfCycles)
-
-    #https://stackoverflow.com/questions/10632839/transform-list-of-tuples-into-a-flat-list-or-a-matrix
-    startDateList = list(sum(data, ()))
-
-    #Add today's date to list. Reverse to start with most recent
-    startDateList.append( getFormattedDate() )
-    startDateList.reverse()
-
-    #Create empty list to store each DF. Each DF is a cycle
-    dfs = []
-
-    #Loop through start dates except last date
-    for idx,startDate in enumerate(startDateList[:-1]):
-        endDate = startDateList[idx+1]
-
-        rawDataList = db.getActiveRecordsForDateRange(startDate, endDate)
-
-        title = ['ID', 'Record Date', 'Active', 'TimeStamp', 'Monitor', 'SexyTime',
-                 'Green Day', 'New Cycle']
-
-        tempDF = pd.DataFrame(rawDataList)
-        tempDF.columns = title
-
-        tempDF.sort_values('Record Date', inplace=True, ascending=False)
-
-        #Need to remove row 1 if idx > 1
-
-        #dfs.append(tempDF)
-
-        #Create figures
-        fig = px.line(tempDF, x='Record Date', y='Monitor', markers=True)
-        #Format date and center point
-        fig.update_xaxes(tickformat='%Y-%m-%d', ticklabelmode='period')
-
-        dfs.append(fig.to_html(include_plotlyjs='cdn', full_html=False))
-
-    return dfs
-
-
 def initCycleDivs(numOfCycles=3):
     #Fetch start date of cycles
     data = db.getCycleDates(numOfCycles)
@@ -271,10 +200,10 @@ def pushDataThread():
     with app.app_context():
         while True:
             if dateListQueue.empty():
-                print('Queue empty')
+                #print('Queue empty')
                 time.sleep(1)
             else:
-                print('Items in queue')
+                #print('Items in queue')
 
                 #Get date from queue
                 dates = dateListQueue.get()
