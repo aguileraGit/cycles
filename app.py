@@ -36,8 +36,6 @@ db = dbCycles.cycleDBClass()
 
 dateListQueue = queue.Queue()
 
-#Historic number of days default
-hisNumDaysDefault = 30
 
 class cycleInputForm(FlaskForm):
     todayDate = DateField('DatePicker', format='%Y-%m-%d')
@@ -309,6 +307,7 @@ def getFormattedDate(_date=None, shiftDays=0):
     _date = _date - datetime.timedelta(days=shiftDays)
 
     return _date.strftime(formatString)
+
 
 def dbToJson(obj):
     toReturn = {'id': obj[0],

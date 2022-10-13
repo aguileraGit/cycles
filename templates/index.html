@@ -69,7 +69,7 @@
 
     <!-- Historic Table Div -->
     <div class="w-75 container" id="historicData">
-        
+
     </div>
     <!-- End Historic Table Div-->
 
@@ -138,21 +138,13 @@
 
     </div>
 
-    <!-- Plan is to have a modal that allows you to put the data. It will
-     connect to update page via ajax call. A button could be used to query
-     the day selected on the calendar. Eventually it'll be replaced with
-     a javascript that is constantly polling the DB for data.
-    -->
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.bundle.min.js" integrity="sha384-pprn3073KE6tl6bjs2QrFaJGz5/SUsLqktiwsUTF55Jfv3qYSDhgCecCxMW52nD2" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.5/dist/umd/popper.min.js" integrity="sha384-Xe+8cL9oJa6tN/veChSP7q+mnSPaj5Bcu9mPX5F5xIGE0DVittaqT5lorf0EI7Vk" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.min.js" integrity="sha384-kjU+l4N0Yf4ZOJErLsIcvOU2qSb74wXpOhqTvwVx3OElZRweTnQ6d31fXEoRD1Jy" crossorigin="anonymous"></script>
 
     <script src="https://code.jquery.com/jquery-3.6.0.js" integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk=" crossorigin="anonymous"></script>
 
-
     <script>
-
       //Get element ID and value
       var date_input = document.getElementById('todayDate');
       date_input.valueAsDate = new Date();
@@ -247,9 +239,6 @@
 
            }
          }); //End ajax call to check for data on date
-
-         const thead = document.querySelectorAll('.table > thead');
-         thead.forEach(e => e.classList.add('thead-light'));
       }
     </script>
 
