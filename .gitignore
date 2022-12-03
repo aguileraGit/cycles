@@ -1,4 +1,5 @@
 *.db
 .ipynb_checkpoints/
 __pycache__/
-static/plots
+static/plots/*.png
+.DS_Store

@@ -22,6 +22,13 @@ import random
 import os
 import uuid
 
+from enum import Enum
+
+class qObjType(Enum):
+    PLOT = 1
+    MSG = 2
+    ERROR = 3
+
 #Look at deployment vs development: https://flask.palletsprojects.com/en/2.2.x/config/
 # Idea would be to load proper database and maybe logins.
 # Would need to remember to set to deploy
@@ -31,7 +38,7 @@ app = Flask(__name__)
 app.secret_key = 'development key'
 
 turbo = Turbo(app)
-
+#Add to <head>: <!-- {{ turbo() }} -->
 db = dbCycles.cycleDBClass()
 
 dateListQueue = queue.Queue()
@@ -40,8 +47,7 @@ dateListQueue = queue.Queue()
 class cycleInputForm(FlaskForm):
     todayDate = DateField('DatePicker', format='%Y-%m-%d')
 
-    monitor = StringField('Monitor')
-    #Need to add check for LPH or number
+    monitor = SelectField('LPH', choices=[('L','L'), ('P','P'), ('H','H')])
 
     sexyTime = BooleanField('Sexy Time')
 
@@ -135,9 +141,16 @@ def home():
         else:
             error = 'Replace Data Boolean in unknown state'
 
-        return render_template('index.html', form=form,
-                                             errors=errors,
-                                             msg=msg)
+        #Add message & error to g.msg/g.error
+        if len(msg) > 0:
+            g.msg = msg
+
+        if len(errors) > 0:
+            g.error = errors
+
+        #Update msgCenter
+        turbo.push(turbo.append(render_template('msgCenter.html'), 'msgCenter'))
+
 
     return render_template('index.html', form=form,
                                          errors=errors,
@@ -175,7 +188,7 @@ def initCycleDivs(numOfCycles=3):
         endDate = startDateList[idx+1]
 
         #Push to queue
-        dateListQueue.put((startDate, endDate))
+        dateListQueue.put( (qObjType.PLOT, (startDate, endDate)) )
 
 
 def generateCycleDivs(df, img):
@@ -189,34 +202,60 @@ def generateCycleDivs(df, img):
     g.imgLocation = img
 
 
+#Starts threading Fn before app starts
 @app.before_first_request
 def startBackgroundThread():
     threading.Thread(target=pushDataThread).start()
 
 
+#Threaded loop. Waits for items to be put in the queue
+# Used for plots.
 def pushDataThread():
     with app.app_context():
         while True:
             if dateListQueue.empty():
                 #print('Queue empty')
-                time.sleep(1)
+                time.sleep(0.2)
             else:
                 #print('Items in queue')
 
-                #Get date from queue
-                dates = dateListQueue.get()
-                startDate = dates[0]
-                endDate = dates[1]
+                qObjTemp = dateListQueue.get()
 
-                df = generateDF(startDate, endDate)
+                #Update the plots on the website
+                if qObjTemp[0] == qObjType.PLOT:
+                    #Get date from queue
+                    dates = qObjTemp[1]
+                    startDate = dates[0]
+                    endDate = dates[1]
 
-                #Create image
-                img = generatePlot(df)
+                    df = generateDF(startDate, endDate)
 
-                #Returns dict to app with context_processor
-                generateCycleDivs(df, img)
+                    #Create image
+                    img = generatePlot(df)
 
-                turbo.push(turbo.append(render_template('plotDiv.html'), 'historicData'))
+                    #Returns dict to app with context_processor
+                    generateCycleDivs(df, img)
+
+                    turbo.push(turbo.append(render_template('plotDiv.html'), 'historicData'))
+
+                '''
+                #Using this queue for messages and errors takes to long to process
+                # when plots are being generated since they take a few seconds.
+                # These messages are sent in the index function. Leaving the qObj cause
+                # I'm too lazy to delete the work done.
+                elif qObjTemp[0] == qObjType.MSG:
+                    print('MSG sent to UI')
+                    g.msg = qObjTemp[1]
+                    print(qObjTemp[1])
+                    turbo.push(turbo.append(render_template('msgCenter.html'), 'msgCenter'))
+
+                elif qObjTemp[0] == qObjType.ERROR:
+                    print('ERROR sent to UI')
+                    g.error = qObjTemp[1]
+                    print(qObjTemp[1])
+                    turbo.push(turbo.append(render_template('msgCenter.html'), 'msgCenter'))
+                '''
+
 
 
 def generateDF(startDate, endDate):
