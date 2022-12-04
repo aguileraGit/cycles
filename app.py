@@ -149,7 +149,14 @@ def home():
             g.error = errors
 
         #Update msgCenter
-        turbo.push(turbo.append(render_template('msgCenter.html'), 'msgCenter'))
+        '''
+        return render_template('index.html', form=form,
+                                             errors=errors,
+                                             msg=msg)
+        '''
+        return turbo.stream(
+            turbo.append(render_template('msgCenter.html'), 'msgCenter')
+        )
 
 
     return render_template('index.html', form=form,
